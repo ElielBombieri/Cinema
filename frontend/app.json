@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Cinema",
+    "slug": "cinema",
+    "version": "1.0.0",
+    "scheme": "cinema",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}

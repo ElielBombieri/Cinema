@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Papel {
+  CLIENTE
+  OPERADOR
+}
+
+enum StatusAssento {
+  LIVRE
+  RESERVADO
+  VENDIDO
+}
+
+enum StatusReserva {
+  ABERTA
+  PAGA
+  EXPIRADA
+  CANCELADA
+}
+
+model Usuario {
+  id        Int       @id @default(autoincrement())
+  nome      String
+  email     String    @unique
+  senhaHash String
+  papel     Papel     @default(CLIENTE)
+  reservas  Reserva[]
+  ingressos Ingresso[]
+}
+
+model Filme {
+  id             Int      @id @default(autoincrement())
+  titulo         String
+  sinopse        String
+  duracaoMinutos Int
+  sessoes        Sessao[]
+}
+
+model Sala {
+  id       Int       @id @default(autoincrement())
+  nome     String    @unique
+  assentos Assento[]
+  sessoes  Sessao[]
+}
+
+model Assento {
+  id      Int             @id @default(autoincrement())
+  salaId  Int
+  sala    Sala            @relation(fields: [salaId], references: [id])
+  fila    String
+  numero  Int
+  sessoes AssentoSessao[]
+
+  @@unique([salaId, fila, numero])
+  @@index([salaId])
+}
+
+model Sessao {
+  id        Int             @id @default(autoincrement())
+  filmeId   Int
+  filme     Filme           @relation(fields: [filmeId], references: [id])
+  salaId    Int
+  sala      Sala            @relation(fields: [salaId], references: [id])
+  inicio    DateTime
+  preco     Decimal         @db.Decimal(10, 2)
+  assentos  AssentoSessao[]
+  reservas  Reserva[]
+  ingressos Ingresso[]
+
+  @@index([inicio])
+}
+
+// Um assento de uma sessão só existe uma vez.
+// O status diz se está livre, reservado ou vendido.
+model AssentoSessao {
+  id              Int           @id @default(autoincrement())
+  sessaoId        Int
+  sessao          Sessao        @relation(fields: [sessaoId], references: [id])
+  assentoId       Int
+  assento         Assento       @relation(fields: [assentoId], references: [id])
+  status          StatusAssento @default(LIVRE)
+  reservaExpiraEm DateTime?
+  usuarioId       Int?
+  reservaId       Int?
+  reserva         Reserva?      @relation(fields: [reservaId], references: [id])
+  ingresso        Ingresso?
+
+  @@unique([sessaoId, assentoId])
+  @@index([sessaoId, status])
+}
+
+model Reserva {
+  id        Int            @id @default(autoincrement())
+  usuarioId Int
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id])
+  sessaoId  Int
+  sessao    Sessao         @relation(fields: [sessaoId], references: [id])
+  expiraEm  DateTime
+  status    StatusReserva  @default(ABERTA)
+  criadaEm  DateTime       @default(now())
+  assentos  AssentoSessao[]
+  ingressos Ingresso[]
+
+  @@index([usuarioId, status])
+  @@index([expiraEm])
+}
+
+model Ingresso {
+  id              Int           @id @default(autoincrement())
+  codigo          String        @unique
+  reservaId       Int
+  reserva         Reserva       @relation(fields: [reservaId], references: [id])
+  assentoSessaoId Int           @unique
+  assentoSessao   AssentoSessao @relation(fields: [assentoSessaoId], references: [id])
+  usuarioId       Int
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
+  sessaoId        Int
+  sessao          Sessao        @relation(fields: [sessaoId], references: [id])
+  valor           Decimal       @db.Decimal(10, 2)
+  utilizadoEm     DateTime?
+  emitidoEm       DateTime      @default(now())
+
+  @@index([sessaoId])
+}

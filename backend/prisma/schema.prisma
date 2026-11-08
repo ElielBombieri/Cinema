@@ -26,13 +26,14 @@ enum StatusReserva {
 }
 
 model Usuario {
-  id        Int       @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   nome      String
-  email     String    @unique
+  email     String          @unique
   senhaHash String
-  papel     Papel     @default(CLIENTE)
+  papel     Papel           @default(CLIENTE)
   reservas  Reserva[]
   ingressos Ingresso[]
+  assentos  AssentoSessao[]
 }
 
 model Filme {
@@ -88,6 +89,7 @@ model AssentoSessao {
   status          StatusAssento @default(LIVRE)
   reservaExpiraEm DateTime?
   usuarioId       Int?
+  usuario         Usuario?      @relation(fields: [usuarioId], references: [id])
   reservaId       Int?
   reserva         Reserva?      @relation(fields: [reservaId], references: [id])
   ingresso        Ingresso?

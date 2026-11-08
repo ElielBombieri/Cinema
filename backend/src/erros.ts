@@ -45,3 +45,34 @@ export function dinheiro(valor: { toString(): string } | number): number {
   const numero = typeof valor === "number" ? valor : Number(valor.toString());
   return Math.round(numero * 100) / 100;
 }
+
+export function emailValido(valor: unknown): string {
+  const email = textoObrigatorio(valor, "o e-mail").toLowerCase();
+  if (!email.includes("@") || email.startsWith("@") || email.endsWith("@")) {
+    throw new ErroRegra("E-mail inválido");
+  }
+  return email;
+}
+
+export type AssentoEscolhido = { fila: string; numero: number };
+
+export function listaAssentos(valor: unknown): AssentoEscolhido[] {
+  if (!Array.isArray(valor) || valor.length === 0) {
+    throw new ErroRegra("Selecione ao menos um assento");
+  }
+  const vistos = new Set<string>();
+  return valor.map((item) => {
+    if (typeof item !== "object" || item === null) {
+      throw new ErroRegra("Assento inválido");
+    }
+    const dados = item as { fila?: unknown; numero?: unknown };
+    const fila = textoObrigatorio(dados.fila, "a fila").toUpperCase();
+    const numero = inteiroPositivo(dados.numero, "O número do assento");
+    const chave = `${fila}-${numero}`;
+    if (vistos.has(chave)) {
+      throw new ErroRegra(`O assento ${chave} foi informado mais de uma vez`);
+    }
+    vistos.add(chave);
+    return { fila, numero };
+  });
+}

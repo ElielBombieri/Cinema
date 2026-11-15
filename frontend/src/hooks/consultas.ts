@@ -2,9 +2,10 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import type { Filme, Ingresso, LinhaRelatorio, MapaSessao, Reserva, Sala, SessaoResumo } from "../models/cinema";
 import * as cinema from "../services/cinemaService";
+import { textoDoErro } from "../services/formatar";
 
 function texto(erro: unknown): string {
-  return erro instanceof Error ? erro.message : "Erro desconhecido";
+  return textoDoErro(erro);
 }
 
 export function useSessoes(token: string) {

@@ -1,9 +1,8 @@
 import { dataHora, dinheiro, ErroRegra, inteiroPositivo, numeroPositivo } from "../erros.js";
-import { Prisma } from "../../generated/prisma/client.js";
 import * as filmeRepositorio from "../repositorios/filme.js";
 import * as salaRepositorio from "../repositorios/sala.js";
 import * as sessaoRepositorio from "../repositorios/sessao.js";
-import { transacao } from "../repositorios/transacao.js";
+import { transacao, travarSala } from "../repositorios/transacao.js";
 import { liberarReservasVencidas } from "./reservaService.js";
 
 export type SessaoResumo = {
@@ -32,6 +31,57 @@ export type MapaSessao = {
   sala: { nome: string };
   assentos: MapaAssento[];
 };
+
+const INTERVALO_MINIMO_MINUTOS = 1;
+
+function horarioLegivel(data: Date): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(data);
+}
+
+function verificarIntervaloSala(
+  sessoes: Awaited<ReturnType<typeof sessaoRepositorio.listarPorSala>>,
+  inicio: Date,
+  duracaoMinutos: number,
+): void {
+  const fimNovoFilme = inicio.getTime() + duracaoMinutos * 60_000;
+  const intervaloMinimo = INTERVALO_MINIMO_MINUTOS * 60_000;
+
+  for (const existente of sessoes) {
+    const fimExistente = existente.inicio.getTime() + existente.filme.duracaoMinutos * 60_000;
+    if (existente.inicio <= inicio) {
+      if (inicio.getTime() < fimExistente) {
+        throw new ErroRegra(
+          `A sessão de ${existente.filme.titulo} termina às ${horarioLegivel(new Date(fimExistente))}. É necessário aguardar esse horário para iniciar outra sessão na sala.`,
+          409,
+        );
+      }
+      if (inicio.getTime() < fimExistente + intervaloMinimo) {
+        throw new ErroRegra(
+          `A sessão cadastrada termina às ${horarioLegivel(new Date(fimExistente))}. A diferença entre o fim de uma sessão e o início da próxima deve ser de 1 minuto.`,
+          409,
+        );
+      }
+      continue;
+    }
+
+    if (existente.inicio.getTime() < fimNovoFilme) {
+      throw new ErroRegra(
+        `A nova sessão terminaria às ${horarioLegivel(new Date(fimNovoFilme))}, mas já existe outra sessão às ${horarioLegivel(existente.inicio)}. Escolha outro horário para esta sala.`,
+        409,
+      );
+    }
+    if (existente.inicio.getTime() < fimNovoFilme + intervaloMinimo) {
+      throw new ErroRegra(
+        `A nova sessão termina às ${horarioLegivel(new Date(fimNovoFilme))}. A diferença entre o fim de uma sessão e o início da próxima deve ser de 1 minuto.`,
+        409,
+      );
+    }
+    break;
+  }
+}
 
 function contar(status: string[]): { livres: number; reservados: number; vendidos: number } {
   return {
@@ -101,12 +151,10 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
   if (!sala) throw new ErroRegra("Sala não encontrada", 404);
   if (sala.assentos.length === 0) throw new ErroRegra("A sala não possui assentos");
 
-  const sessaoExistente = await sessaoRepositorio.buscarPorSalaEInicio(salaId, inicio);
-  if (sessaoExistente) {
-    throw new ErroRegra("Já existe uma sessão nesta sala para essa data e horário");
-  }
-
   const sessao = await transacao(async (tx) => {
+    await travarSala(tx, salaId);
+    const sessoesDaSala = await sessaoRepositorio.listarPorSala(salaId, tx);
+    verificarIntervaloSala(sessoesDaSala, inicio, filme.duracaoMinutos);
     const criada = await sessaoRepositorio.criar(
       { filmeId, salaId, inicio, preco: preco.toFixed(2) },
       tx,
@@ -118,15 +166,23 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
     );
     return criada;
   }).catch((erro: unknown) => {
-    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
-      const alvo = erro.meta?.target;
+    if (
+      typeof erro === "object" &&
+      erro !== null &&
+      "code" in erro &&
+      erro.code === "P2002"
+    ) {
+      const meta = "meta" in erro && typeof erro.meta === "object" && erro.meta !== null
+        ? (erro.meta as { target?: unknown })
+        : undefined;
+      const alvo = meta?.target;
       const campos = Array.isArray(alvo) ? alvo : [];
       const nomeIndice = typeof alvo === "string" ? alvo : "";
       if (
         (campos.includes("salaId") && campos.includes("inicio")) ||
         nomeIndice.includes("Sessao_salaId_inicio_key")
       ) {
-        throw new ErroRegra("Já existe uma sessão nesta sala para essa data e horário");
+        throw new ErroRegra("Já existe uma sessão nesta sala para essa data e horário.", 409);
       }
     }
     throw erro;

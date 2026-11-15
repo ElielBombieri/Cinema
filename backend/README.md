@@ -17,7 +17,7 @@ Na raiz do projeto (`Cinema`), suba o banco:
 docker compose up -d
 ```
 
-O Postgres fica em `localhost:5432`, com usuário `cinema`, senha `cinema` e banco `cinema`.
+O Postgres fica em `localhost:5433`, com usuário `cinema`, senha `cinema` e banco `cinema`.
 
 Na pasta `backend`:
 
@@ -51,7 +51,7 @@ Copie `.env.example` para `.env`.
 | `DATABASE_URL` | Conexão do Prisma com o Postgres |
 | `JWT_SECRET` | Assinatura do token. Troque o valor de exemplo antes de usar fora da máquina local |
 | `PORT` | Porta da API. O padrão é `3000` |
-| `FRONTEND_ORIGIN` | Origem exata liberada no CORS. O padrão é `http://localhost:8081`, que é a web do Expo |
+| `FRONTEND_ORIGIN` | Origens liberadas no CORS, separadas por vírgula. O padrão é `http://localhost:8081`, que é a web do Expo |
 
 O token vale 8 horas e vai no cabeçalho `Authorization: Bearer <token>`. Erros de regra voltam como `{ "erro": "mensagem" }`.
 
@@ -80,7 +80,7 @@ Rotas depois de `/auth/registrar` e `/auth/login` exigem token.
 | `POST` | `/salas` | operador | `{ nome, filas, assentosPorFila }` — até 26 filas (A–Z) e 30 assentos por fila |
 | `GET` | `/sessoes` | autenticado | — |
 | `GET` | `/sessoes/:id` | autenticado | mapa da sessão; cada assento diz se é `LIVRE`, `RESERVADO` ou `VENDIDO` |
-| `POST` | `/sessoes` | operador | `{ filmeId, salaId, inicio, preco }` — `inicio` no formato `AAAA-MM-DD HH:MM` |
+| `POST` | `/sessoes` | operador | `{ filmeId, salaId, inicio, preco }` — `inicio` no formato `AAAA-MM-DDTHH:MM`; sessões na mesma sala respeitam a duração do filme e intervalo mínimo de 1 minuto |
 | `GET` | `/reservas/minhas` | cliente | — |
 | `POST` | `/reservas` | cliente | `{ sessaoId, assentos: [{ fila, numero }] }` |
 | `POST` | `/reservas/:id/pagar` | cliente | emite os ingressos da reserva aberta |

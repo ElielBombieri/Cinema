@@ -8,5 +8,9 @@ export function transacao<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
 }
 
 export async function travarSessao(tx: Tx, sessaoId: number): Promise<void> {
-  await tx.$queryRaw`SELECT pg_advisory_xact_lock(${sessaoId}::bigint)`;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(${sessaoId}::bigint)::text`;
+}
+
+export async function travarSala(tx: Tx, salaId: number): Promise<void> {
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(1, ${salaId})::text`;
 }

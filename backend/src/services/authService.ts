@@ -72,16 +72,16 @@ export function lerToken(authorization: string | undefined): { id: number; papel
   try {
     const payload = jwt.verify(token, segredo());
     if (typeof payload === "string" || payload.sub === undefined) {
-      throw new ErroRegra("Token inválido", 401);
+      throw new ErroRegra("Sua sessão expirou. Entre novamente.", 401);
     }
     const id = Number(payload.sub);
     const papel = payload.papel;
     if (!Number.isInteger(id) || (papel !== "CLIENTE" && papel !== "OPERADOR")) {
-      throw new ErroRegra("Token inválido", 401);
+      throw new ErroRegra("Sua sessão expirou. Entre novamente.", 401);
     }
     return { id, papel };
   } catch (erro) {
     if (erro instanceof ErroRegra) throw erro;
-    throw new ErroRegra("Token inválido", 401);
+    throw new ErroRegra("Sua sessão expirou. Entre novamente.", 401);
   }
 }

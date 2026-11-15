@@ -26,6 +26,25 @@ export default function Sessoes() {
       setErroAcao("Escolha o filme e a sala.");
       return;
     }
+    if (!/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(inicio)) {
+      setErroAcao("Escolha a data e a hora no calendário.");
+      return;
+    }
+    const dataHoraLocal = new Date(inicio);
+    const [data] = inicio.split("T");
+    if (
+      Number.isNaN(dataHoraLocal.getTime()) ||
+      dataHoraLocal.getFullYear() !== Number(data.slice(0, 4)) ||
+      dataHoraLocal.getMonth() + 1 !== Number(data.slice(5, 7)) ||
+      dataHoraLocal.getDate() !== Number(data.slice(8, 10))
+    ) {
+      setErroAcao("A data informada não existe. Confira dia, mês e ano.");
+      return;
+    }
+    if (dataHoraLocal <= new Date()) {
+      setErroAcao("Escolha uma data e hora futuras.");
+      return;
+    }
     setEnviando(true);
     setErroAcao(null);
     try {
@@ -43,7 +62,8 @@ export default function Sessoes() {
   return (
     <Tela>
       <Titulo>Nova sessão</Titulo>
-      <Texto>Data e hora no formato AAAA-MM-DD HH:MM. O preço é por assento.</Texto>
+      <Texto>Selecione a data e a hora no calendário. O preço é por assento.</Texto>
+      <Texto>Entre o fim de uma sessão e o início da próxima, deixe pelo menos 1 minuto.</Texto>
       <Texto>Filme: {filme ? filme.titulo : "nenhum"}</Texto>
       {filmes.carregando ? <Aviso texto="Carregando filmes..." /> : null}
       {filmes.erro ? <Erro texto={filmes.erro} /> : null}
@@ -66,7 +86,7 @@ export default function Sessoes() {
           secundario={item.id !== salaId}
         />
       ))}
-      <Campo rotulo="Data e hora" valor={inicio} aoMudar={setInicio} semMaiusculas />
+      <Campo rotulo="Data e hora" valor={inicio} aoMudar={setInicio} tipo="datetime-local" placeholder="Selecione data e hora" />
       <Campo rotulo="Preço" valor={preco} aoMudar={setPreco} teclado="decimal-pad" semMaiusculas />
       {erroAcao ? <Erro texto={erroAcao} /> : null}
       <Botao titulo={enviando ? "Salvando..." : "Cadastrar sessão"} aoPressionar={() => void salvar()} desabilitado={enviando} />

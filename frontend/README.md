@@ -83,7 +83,7 @@ Na bilheteria:
 - **Validar ingresso** recebe o código e marca o ingresso como utilizado.
 - **Cadastrar filme** pede título, sinopse e duração em minutos.
 - **Cadastrar sala** pede nome, quantidade de filas e assentos por fila. As filas saem de A em diante, com no máximo 26 filas e 30 assentos por fila.
-- **Cadastrar sessão** escolhe um filme e uma sala já existentes. A data e a hora vão no formato `AAAA-MM-DD HH:MM`. O preço é por assento.
+- **Cadastrar sessão** escolhe um filme e uma sala já existentes. A data e a hora são escolhidas no mesmo campo de calendário. O app impede sessões sobrepostas na mesma sala e exige pelo menos 1 minuto entre o fim de um filme e o início do próximo. O preço é por assento.
 - **Relatório de vendas** mostra, por sessão, lugares livres, reservados e vendidos, a ocupação e o total vendido.
 
 O catálogo de exemplo traz os filmes *O Farol* e *Noite na Cidade*, a Sala 1 (filas A–C, cinco assentos) e duas sessões no dia seguinte.

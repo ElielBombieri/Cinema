@@ -1,5 +1,16 @@
-import { Stack } from "expo-router";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
 import { AuthProvider } from "../context/AuthContext";
+import { Botao, Tela, Texto, Titulo } from "../components/Interface";
+
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  return (
+    <Tela>
+      <Titulo>Não foi possível abrir esta tela</Titulo>
+      <Texto>Tente novamente. Se o problema continuar, feche e abra o aplicativo.</Texto>
+      <Botao titulo="Tentar novamente" aoPressionar={retry} />
+    </Tela>
+  );
+}
 
 export default function RootLayout() {
   return (

@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,11 +18,11 @@ export function Tela({ children }: { children: ReactNode }) {
   );
 }
 
-export function Titulo({ children }: { children: string }) {
+export function Titulo({ children }: { children: ReactNode }) {
   return <Text style={estilos.titulo}>{children}</Text>;
 }
 
-export function Texto({ children }: { children: string }) {
+export function Texto({ children }: { children: ReactNode }) {
   return <Text style={estilos.texto}>{children}</Text>;
 }
 
@@ -41,21 +42,48 @@ type CampoProps = {
   teclado?: KeyboardTypeOptions;
   variasLinhas?: boolean;
   semMaiusculas?: boolean;
+  placeholder?: string;
+  maxLength?: number;
+  tipo?: "datetime-local";
 };
 
-export function Campo({ rotulo, valor, aoMudar, seguro, teclado, variasLinhas, semMaiusculas }: CampoProps) {
+const estiloDataHoraWeb: CSSProperties = {
+  boxSizing: "border-box",
+  width: "100%",
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  padding: 10,
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
+  fontSize: 16,
+  fontFamily: "Arial, sans-serif",
+};
+
+export function Campo({ rotulo, valor, aoMudar, seguro, teclado, variasLinhas, semMaiusculas, placeholder, maxLength, tipo }: CampoProps) {
   return (
     <View style={estilos.campo}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
-      <TextInput
-        style={[estilos.input, variasLinhas ? estilos.area : null]}
-        value={valor}
-        onChangeText={aoMudar}
-        secureTextEntry={seguro}
-        keyboardType={teclado}
-        autoCapitalize={semMaiusculas || seguro ? "none" : "sentences"}
-        multiline={variasLinhas}
-      />
+      {tipo === "datetime-local" && Platform.OS === "web" ? (
+        <input
+          aria-label={rotulo}
+          type="datetime-local"
+          value={valor}
+          onChange={(evento) => aoMudar(evento.currentTarget.value)}
+          style={estiloDataHoraWeb}
+        />
+      ) : (
+        <TextInput
+          style={[estilos.input, variasLinhas ? estilos.area : null]}
+          value={valor}
+          onChangeText={aoMudar}
+          secureTextEntry={seguro}
+          keyboardType={teclado}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          autoCapitalize={semMaiusculas || seguro ? "none" : "sentences"}
+          multiline={variasLinhas}
+        />
+      )}
     </View>
   );
 }

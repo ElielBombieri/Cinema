@@ -34,9 +34,21 @@ export function dataHora(valor: unknown): Date {
   if (typeof valor !== "string" || valor.trim() === "") {
     throw new ErroRegra("Informe a data e a hora");
   }
-  const data = new Date(valor.trim().replace(" ", "T"));
-  if (Number.isNaN(data.getTime())) {
-    throw new ErroRegra("Data e hora inválidas. Use AAAA-MM-DD HH:MM");
+  const partes = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/.exec(valor.trim());
+  if (!partes) {
+    throw new ErroRegra("Informe a data no formato AAAA-MM-DD e a hora no formato HH:MM");
+  }
+  const [, ano, mes, dia, hora, minuto] = partes;
+  const data = new Date(`${ano}-${mes}-${dia}T${hora}:${minuto}:00`);
+  if (
+    Number.isNaN(data.getTime()) ||
+    data.getFullYear() !== Number(ano) ||
+    data.getMonth() + 1 !== Number(mes) ||
+    data.getDate() !== Number(dia) ||
+    data.getHours() !== Number(hora) ||
+    data.getMinutes() !== Number(minuto)
+  ) {
+    throw new ErroRegra("A data ou a hora informada não é válida");
   }
   return data;
 }

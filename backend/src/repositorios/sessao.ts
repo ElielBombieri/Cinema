@@ -23,10 +23,15 @@ export function buscarPorId(id: number, db: Db = prisma) {
   });
 }
 
-export function buscarPorSalaEInicio(salaId: number, inicio: Date, db: Db = prisma) {
-  return db.sessao.findFirst({
-    where: { salaId, inicio },
-    select: { id: true },
+export function listarPorSala(salaId: number, db: Db = prisma) {
+  return db.sessao.findMany({
+    where: { salaId },
+    select: {
+      id: true,
+      inicio: true,
+      filme: { select: { titulo: true, duracaoMinutos: true } },
+    },
+    orderBy: { inicio: "asc" },
   });
 }
 

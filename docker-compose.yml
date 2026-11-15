@@ -1,10 +1,15 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-bookworm
     environment:
       POSTGRES_USER: cinema
       POSTGRES_PASSWORD: cinema
       POSTGRES_DB: cinema
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinema -d cinema"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
     ports:
       - "5433:5432"
     volumes:

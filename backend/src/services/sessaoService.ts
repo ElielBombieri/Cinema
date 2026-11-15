@@ -1,4 +1,5 @@
 import { dataHora, dinheiro, ErroRegra, inteiroPositivo, numeroPositivo } from "../erros.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import * as filmeRepositorio from "../repositorios/filme.js";
 import * as salaRepositorio from "../repositorios/sala.js";
 import * as sessaoRepositorio from "../repositorios/sessao.js";
@@ -89,6 +90,9 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
   const filmeId = inteiroPositivo(dados.filmeId, "O filme");
   const salaId = inteiroPositivo(dados.salaId, "A sala");
   const inicio = dataHora(dados.inicio);
+  if (inicio <= new Date()) {
+    throw new ErroRegra("A data e hora da sessão devem ser futuras");
+  }
   const preco = numeroPositivo(dados.preco, "O preço");
 
   const filme = await filmeRepositorio.buscarPorId(filmeId);
@@ -96,6 +100,11 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
   const sala = await salaRepositorio.buscarPorId(salaId);
   if (!sala) throw new ErroRegra("Sala não encontrada", 404);
   if (sala.assentos.length === 0) throw new ErroRegra("A sala não possui assentos");
+
+  const sessaoExistente = await sessaoRepositorio.buscarPorSalaEInicio(salaId, inicio);
+  if (sessaoExistente) {
+    throw new ErroRegra("Já existe uma sessão nesta sala para essa data e horário");
+  }
 
   const sessao = await transacao(async (tx) => {
     const criada = await sessaoRepositorio.criar(
@@ -108,6 +117,19 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
       tx,
     );
     return criada;
+  }).catch((erro: unknown) => {
+    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
+      const alvo = erro.meta?.target;
+      const campos = Array.isArray(alvo) ? alvo : [];
+      const nomeIndice = typeof alvo === "string" ? alvo : "";
+      if (
+        (campos.includes("salaId") && campos.includes("inicio")) ||
+        nomeIndice.includes("Sessao_salaId_inicio_key")
+      ) {
+        throw new ErroRegra("Já existe uma sessão nesta sala para essa data e horário");
+      }
+    }
+    throw erro;
   });
 
   return {

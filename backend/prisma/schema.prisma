@@ -76,6 +76,7 @@ model Sessao {
   ingressos Ingresso[]
 
   @@index([inicio])
+  @@unique([salaId, inicio])
 }
 
 // Um assento de uma sessão só existe uma vez.

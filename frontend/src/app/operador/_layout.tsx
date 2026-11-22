@@ -43,7 +43,7 @@ export default function LayoutOperador() {
 
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: "Bilheteria" }} />
+      <Stack.Screen name="index" options={{ title: "Bilheteria", headerBackVisible: false, headerLeft: () => null }} />
       <Stack.Screen name="venda" options={{ title: "Venda no balcão", ...voltarParaInicio() }} />
       <Stack.Screen name="validar" options={{ title: "Validar ingresso", ...voltarParaInicio() }} />
       <Stack.Screen name="filmes" options={{ title: "Filmes", ...voltarParaInicio() }} />

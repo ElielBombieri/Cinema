@@ -8,6 +8,8 @@ export type Usuario = {
 
 export type SessaoResumo = {
   id: number;
+  filmeId: number;
+  salaId: number;
   inicio: string;
   preco: number;
   filme: { titulo: string; duracaoMinutos: number };

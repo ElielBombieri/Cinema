@@ -1,6 +1,6 @@
 const URL_API = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
-type Metodo = "GET" | "POST";
+type Metodo = "GET" | "POST" | "PUT" | "DELETE";
 
 type Opcoes = {
   method?: Metodo;

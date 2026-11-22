@@ -24,3 +24,15 @@ export function criarAssentos(
     data: assentos.map((assento) => ({ salaId, fila: assento.fila, numero: assento.numero })),
   });
 }
+
+export function atualizarNome(id: number, nome: string, db: Db = prisma) {
+  return db.sala.update({ where: { id }, data: { nome } });
+}
+
+export function contarSessoes(id: number, db: Db = prisma) {
+  return db.sessao.count({ where: { salaId: id } });
+}
+
+export function excluir(id: number, db: Db = prisma) {
+  return db.sala.delete({ where: { id } });
+}

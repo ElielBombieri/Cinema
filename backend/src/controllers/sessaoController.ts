@@ -21,3 +21,16 @@ sessoesRouter.post("/", async (req, res) => {
   exigirOperador(exigirUsuario(req));
   res.status(201).json(await sessaoService.criar(req.body));
 });
+
+sessoesRouter.put("/:id", async (req, res) => {
+  exigirOperador(exigirUsuario(req));
+  const id = inteiroPositivo(req.params.id, "A sessão");
+  res.json(await sessaoService.atualizar(id, req.body));
+});
+
+sessoesRouter.delete("/:id", async (req, res) => {
+  exigirOperador(exigirUsuario(req));
+  const id = inteiroPositivo(req.params.id, "A sessão");
+  await sessaoService.excluir(id);
+  res.sendStatus(204);
+});

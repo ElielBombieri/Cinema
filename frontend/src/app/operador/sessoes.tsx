@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Aviso, Botao, Campo, Erro, Tela, Texto, Titulo } from "../../components/Interface";
+import { Fragment, useState } from "react";
+import { Aviso, Botao, BotaoIconeAcao, Campo, confirmarExclusao, Erro, Tela, Texto, Titulo } from "../../components/Interface";
 import { CartaoSessao } from "../../components/CartaoSessao";
 import { useAuth } from "../../context/AuthContext";
 import { useFilmes, useSalas, useSessoes } from "../../hooks/consultas";
@@ -17,6 +17,7 @@ export default function Sessoes() {
   const [preco, setPreco] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const [editando, setEditando] = useState<number | null>(null);
 
   const filme = filmes.filmes.find((item) => item.id === filmeId);
   const sala = salas.salas.find((item) => item.id === salaId);
@@ -48,7 +49,10 @@ export default function Sessoes() {
     setEnviando(true);
     setErroAcao(null);
     try {
-      await cinema.criarSessao(token, { filmeId: filme.id, salaId: sala.id, inicio, preco });
+      const dados = { filmeId: filme.id, salaId: sala.id, inicio, preco };
+      if (editando === null) await cinema.criarSessao(token, dados);
+      else await cinema.atualizarSessao(token, editando, dados);
+      setEditando(null);
       setInicio("");
       setPreco("");
       await sessoes.recarregar();
@@ -59,9 +63,23 @@ export default function Sessoes() {
     }
   };
 
+  const editar = (item: (typeof sessoes.sessoes)[number]) => {
+    const data = new Date(item.inicio);
+    const local = new Date(data.getTime() - data.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setEditando(item.id); setFilmeId(item.filmeId); setSalaId(item.salaId); setInicio(local); setPreco(String(item.preco)); setErroAcao(null);
+  };
+  const excluir = async (id: number) => {
+    if (!token) return;
+    if (!(await confirmarExclusao("Tem certeza de que deseja excluir esta sessão?"))) return;
+    setEnviando(true); setErroAcao(null);
+    try { await cinema.excluirSessao(token, id); await sessoes.recarregar(); }
+    catch (e) { setErroAcao(textoDoErro(e)); }
+    finally { setEnviando(false); }
+  };
+
   return (
     <Tela>
-      <Titulo>Nova sessão</Titulo>
+      <Titulo>{editando === null ? "Nova sessão" : "Editar sessão"}</Titulo>
       <Texto>Selecione a data e a hora no calendário. O preço é por assento.</Texto>
       <Texto>Entre o fim de uma sessão e o início da próxima, deixe pelo menos 1 minuto.</Texto>
       <Texto>Filme: {filme ? filme.titulo : "nenhum"}</Texto>
@@ -89,11 +107,19 @@ export default function Sessoes() {
       <Campo rotulo="Data e hora" valor={inicio} aoMudar={setInicio} tipo="datetime-local" placeholder="Selecione data e hora" />
       <Campo rotulo="Preço" valor={preco} aoMudar={setPreco} teclado="decimal-pad" semMaiusculas />
       {erroAcao ? <Erro texto={erroAcao} /> : null}
-      <Botao titulo={enviando ? "Salvando..." : "Cadastrar sessão"} aoPressionar={() => void salvar()} desabilitado={enviando} />
+      <Botao titulo={enviando ? "Salvando..." : editando === null ? "Cadastrar sessão" : "Salvar alterações"} aoPressionar={() => void salvar()} desabilitado={enviando} />
+      {editando !== null ? <Botao titulo="Cancelar edição" secundario aoPressionar={() => { setEditando(null); setInicio(""); setPreco(""); }} /> : null}
       {sessoes.carregando ? <Aviso texto="Carregando sessões..." /> : null}
       {sessoes.erro ? <Erro texto={sessoes.erro} /> : null}
       {sessoes.sessoes.map((item) => (
-        <CartaoSessao key={item.id} sessao={item} />
+        <Fragment key={item.id}>
+          <CartaoSessao sessao={item} acoes={
+            <>
+            <BotaoIconeAcao tipo="editar" aoPressionar={() => editar(item)} />
+            <BotaoIconeAcao tipo="excluir" desabilitado={enviando} aoPressionar={() => void excluir(item.id)} />
+            </>
+          } />
+        </Fragment>
       ))}
     </Tela>
   );

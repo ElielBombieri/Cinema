@@ -7,6 +7,8 @@ import { liberarReservasVencidas } from "./reservaService.js";
 
 export type SessaoResumo = {
   id: number;
+  filmeId: number;
+  salaId: number;
   inicio: string;
   preco: number;
   filme: { titulo: string; duracaoMinutos: number };
@@ -98,6 +100,8 @@ export async function listar(): Promise<SessaoResumo[]> {
     const totais = contar(sessao.assentos.map((assento) => assento.status));
     return {
       id: sessao.id,
+      filmeId: sessao.filmeId,
+      salaId: sessao.salaId,
       inicio: sessao.inicio.toISOString(),
       preco: dinheiro(sessao.preco),
       filme: { titulo: sessao.filme.titulo, duracaoMinutos: sessao.filme.duracaoMinutos },
@@ -135,6 +139,14 @@ export async function mapa(sessaoId: number, usuarioId: number): Promise<MapaSes
 }
 
 export async function criar(corpo: unknown): Promise<SessaoResumo> {
+  return salvar(corpo, undefined);
+}
+
+export async function atualizar(id: number, corpo: unknown): Promise<SessaoResumo> {
+  return salvar(corpo, id);
+}
+
+async function salvar(corpo: unknown, id: number | undefined): Promise<SessaoResumo> {
   if (typeof corpo !== "object" || corpo === null) throw new ErroRegra("Dados inválidos");
   const dados = corpo as { filmeId?: unknown; salaId?: unknown; inicio?: unknown; preco?: unknown };
   const filmeId = inteiroPositivo(dados.filmeId, "O filme");
@@ -153,18 +165,25 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
 
   const sessao = await transacao(async (tx) => {
     await travarSala(tx, salaId);
-    const sessoesDaSala = await sessaoRepositorio.listarPorSala(salaId, tx);
+    const gerenciada = id === undefined ? null : await sessaoRepositorio.buscarParaGerenciar(id, tx);
+    if (id !== undefined && !gerenciada) throw new ErroRegra("Sessão não encontrada", 404);
+    if (gerenciada && gerenciada.reservas.length + gerenciada.ingressos.length > 0) {
+      throw new ErroRegra("Não é possível alterar uma sessão que já possui reservas ou ingressos.", 409);
+    }
+    const sessoesDaSala = id === undefined
+      ? await sessaoRepositorio.listarPorSala(salaId, tx)
+      : await sessaoRepositorio.listarPorSalaExceto(salaId, id, tx);
     verificarIntervaloSala(sessoesDaSala, inicio, filme.duracaoMinutos);
-    const criada = await sessaoRepositorio.criar(
-      { filmeId, salaId, inicio, preco: preco.toFixed(2) },
-      tx,
-    );
-    await sessaoRepositorio.criarAssentos(
-      criada.id,
-      sala.assentos.map((assento) => assento.id),
-      tx,
-    );
-    return criada;
+    const dados = { filmeId, salaId, inicio, preco: preco.toFixed(2) };
+    if (id === undefined) {
+      const criada = await sessaoRepositorio.criar(dados, tx);
+      await sessaoRepositorio.criarAssentos(criada.id, sala.assentos.map((assento) => assento.id), tx);
+      return criada;
+    }
+    await sessaoRepositorio.excluirAssentos(id, tx);
+    const atualizada = await sessaoRepositorio.atualizar(id, dados, tx);
+    await sessaoRepositorio.criarAssentos(id, sala.assentos.map((assento) => assento.id), tx);
+    return atualizada;
   }).catch((erro: unknown) => {
     if (
       typeof erro === "object" &&
@@ -190,6 +209,8 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
 
   return {
     id: sessao.id,
+    filmeId,
+    salaId,
     inicio: sessao.inicio.toISOString(),
     preco,
     filme: { titulo: filme.titulo, duracaoMinutos: filme.duracaoMinutos },
@@ -198,4 +219,17 @@ export async function criar(corpo: unknown): Promise<SessaoResumo> {
     reservados: 0,
     vendidos: 0,
   };
+}
+
+export async function excluir(id: number): Promise<void> {
+  await liberarReservasVencidas(id);
+  const sessao = await sessaoRepositorio.buscarParaGerenciar(id);
+  if (!sessao) throw new ErroRegra("Sessão não encontrada", 404);
+  if (sessao.reservas.length + sessao.ingressos.length > 0 || sessao.assentos.some((a) => a.status !== "LIVRE")) {
+    throw new ErroRegra("Não é possível excluir uma sessão que possui reservas ou ingressos.", 409);
+  }
+  await transacao(async (tx) => {
+    await sessaoRepositorio.excluirAssentos(id, tx);
+    await sessaoRepositorio.excluir(id, tx);
+  });
 }

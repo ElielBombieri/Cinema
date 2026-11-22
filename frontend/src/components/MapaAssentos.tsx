@@ -17,11 +17,11 @@ export function MapaAssentos({ assentos, escolhidos, aoEscolher }: Props) {
   return (
     <View style={estilos.bloco}>
       <View style={estilos.legenda}>
-        <Text style={estilos.legendaItem}>Livre</Text>
-        <Text style={estilos.legendaItem}>Escolhido</Text>
-        <Text style={estilos.legendaItem}>Meu</Text>
-        <Text style={estilos.legendaItem}>Reservado</Text>
-        <Text style={estilos.legendaItem}>Vendido</Text>
+        <View style={estilos.legendaItem}><View style={[estilos.amostra, estilos.livre]} /><Text style={estilos.textoLegenda}>Livre</Text></View>
+        <View style={estilos.legendaItem}><View style={[estilos.amostra, estilos.escolhido]} /><Text style={estilos.textoLegenda}>Escolhido</Text></View>
+        <View style={estilos.legendaItem}><View style={[estilos.amostra, estilos.amostraMeu]} /><Text style={estilos.textoLegenda}>Meu reservado</Text></View>
+        <View style={estilos.legendaItem}><View style={[estilos.amostra, estilos.amostraReservado]} /><Text style={estilos.textoLegenda}>Reservado</Text></View>
+        <View style={estilos.legendaItem}><View style={[estilos.amostra, estilos.amostraVendido]} /><Text style={estilos.textoLegenda}>Vendido</Text></View>
       </View>
       {filas.map((fila) => (
         <View key={fila} style={estilos.fila}>
@@ -65,9 +65,30 @@ const estilos = StyleSheet.create({
     gap: 8,
   },
   legendaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  textoLegenda: {
     fontSize: 13,
     color: "#475569",
   },
+  amostra: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+  },
+  livre: { backgroundColor: "#e2e8f0" },
+  escolhido: { backgroundColor: "#1d4ed8" },
+  amostraMeu: { backgroundColor: "#7c3aed" },
+  amostraReservado: { backgroundColor: "#f59e0b" },
+  amostraVendido: { backgroundColor: "#94a3b8" },
   fila: {
     flexDirection: "row",
     flexWrap: "wrap",

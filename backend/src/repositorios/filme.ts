@@ -15,3 +15,15 @@ export function criar(
 ) {
   return db.filme.create({ data: dados });
 }
+
+export function atualizar(id: number, dados: { titulo: string; sinopse: string; duracaoMinutos: number }, db: Db = prisma) {
+  return db.filme.update({ where: { id }, data: dados });
+}
+
+export function contarSessoes(id: number, db: Db = prisma) {
+  return db.sessao.count({ where: { filmeId: id } });
+}
+
+export function excluir(id: number, db: Db = prisma) {
+  return db.filme.delete({ where: { id } });
+}

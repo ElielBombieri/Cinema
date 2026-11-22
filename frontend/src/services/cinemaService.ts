@@ -78,6 +78,14 @@ export function criarFilme(
   return api<Filme>("/filmes", { method: "POST", token, corpo });
 }
 
+export function atualizarFilme(token: string, id: number, corpo: { titulo: string; sinopse: string; duracaoMinutos: string }): Promise<Filme> {
+  return api<Filme>(`/filmes/${id}`, { method: "PUT", token, corpo });
+}
+
+export function excluirFilme(token: string, id: number): Promise<void> {
+  return api<void>(`/filmes/${id}`, { method: "DELETE", token });
+}
+
 export function listarSalas(token: string): Promise<Sala[]> {
   return api<Sala[]>("/salas", { token });
 }
@@ -89,11 +97,27 @@ export function criarSala(
   return api<Sala>("/salas", { method: "POST", token, corpo });
 }
 
+export function atualizarSala(token: string, id: number, corpo: { nome: string; filas?: string; assentosPorFila?: string }): Promise<Sala> {
+  return api<Sala>(`/salas/${id}`, { method: "PUT", token, corpo });
+}
+
+export function excluirSala(token: string, id: number): Promise<void> {
+  return api<void>(`/salas/${id}`, { method: "DELETE", token });
+}
+
 export function criarSessao(
   token: string,
   corpo: { filmeId: number; salaId: number; inicio: string; preco: string },
 ): Promise<SessaoResumo> {
   return api<SessaoResumo>("/sessoes", { method: "POST", token, corpo });
+}
+
+export function atualizarSessao(token: string, id: number, corpo: { filmeId: number; salaId: number; inicio: string; preco: string }): Promise<SessaoResumo> {
+  return api<SessaoResumo>(`/sessoes/${id}`, { method: "PUT", token, corpo });
+}
+
+export function excluirSessao(token: string, id: number): Promise<void> {
+  return api<void>(`/sessoes/${id}`, { method: "DELETE", token });
 }
 
 export function relatorioVendas(token: string): Promise<LinhaRelatorio[]> {
